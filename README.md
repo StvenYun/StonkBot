@@ -12,7 +12,7 @@
   - Leaderboards system
   - Seasonal competition
       - month long with starting balance of 10k? 100k?
-  - Limit ORder
+  - Limit Order
   - Stop Order
   - Trailing Stop Order
   - Stop Limit Order
