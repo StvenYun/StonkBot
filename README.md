@@ -11,8 +11,13 @@
 2. In Progress...
   - Leaderboards system
   - Seasonal competition
+      - month long with starting balance of 10k? 100k?
   - Limit ORder
   - Stop Order
   - Trailing Stop Order
   - Stop Limit Order
-  
+  - Return transaction history
+
+
+3. Setup
+
