@@ -9,10 +9,10 @@
   - !buy/sell <ticker> -Buys and sells stock at current market price.
   
 2. In Progress...
-  -Leaderboards system
-  -Seasonal competition
-  -Limit ORder
-  -Stop Order
-  -Trailing Stop Order
-  -Stop Limit Order
+  - Leaderboards system
+  - Seasonal competition
+  - Limit ORder
+  - Stop Order
+  - Trailing Stop Order
+  - Stop Limit Order
   
