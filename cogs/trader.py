@@ -5,6 +5,7 @@ import aiohttp
 import mysql.connector
 from decouple import config
 from dateutil import parser
+from datetime import datetime
 
 mydb = mysql.connector.connect(
     host="localhost",
@@ -194,79 +195,92 @@ class trader(commands.Cog):
 
     @commands.command(name= 'buy', help='!buy <ticker> <amount>')
     async def buy(self, ctx, ticker, value, type='buy'):
-        if int(value) > 0:
-            price = await getPrice(ticker)
-            client_id = ctx.author.id
-            await ctx.send(f'{ticker.upper()} price is {price}')
-
-            cursor = mydb.cursor()
-            cursor.execute('SELECT user_xp FROM users WHERE client_id = ' + str(ctx.author.id))
-            results = cursor.fetchall()
-            mydb.commit()
-            buyingPower = float(results[0][0])
-            #print(buyingPower)
-
-            numberofStock = float(value)
-            #print(numberofStock)
-            priceofStock = float((numberofStock*price))
-
-            #print(priceofStock)
+        now = datetime.now()
+        day = int(now.weekday())
+        # print(day)
+        # print(now)
+        # print(now.hour)
+        # print(now.minute)
+        if int(now.hour) >= 9 and int(now.hour) <=16 and day < 5:
+            print('ok')
 
 
-            if priceofStock <= buyingPower:
+            if int(value) > 0:
+                price = await getPrice(ticker)
+                client_id = ctx.author.id
+                await ctx.send(f'{ticker.upper()} price is {price}')
 
-                buyingPower += -priceofStock
+                cursor = mydb.cursor()
+                cursor.execute('SELECT user_xp FROM users WHERE client_id = ' + str(ctx.author.id))
+                results = cursor.fetchall()
+                mydb.commit()
+                buyingPower = float(results[0][0])
                 #print(buyingPower)
 
-                cursor.execute(f'UPDATE users SET user_xp ={buyingPower} WHERE client_id ={str(ctx.author.id)}')
-                mydb.commit()
+                numberofStock = float(value)
+                #print(numberofStock)
+                priceofStock = float((numberofStock*price))
 
-                await addStockToPurchases(ctx, ticker, value, type)
+                #print(priceofStock)
 
-                await addPortfolio(ctx, ticker, 0, price)
 
-                avg_cost = await updateAVG(ctx, ticker, value, price)
+                if priceofStock <= buyingPower:
 
-                # print(avg_cost)
-                cursor = mydb.cursor()
-                cursor.execute(
-                    f'''UPDATE portfolio SET avg_price ={avg_cost} WHERE client_id ={client_id} AND stock ='{ticker.upper()}'
-                                                    ''')
-                mydb.commit()
+                    buyingPower += -priceofStock
+                    #print(buyingPower)
 
-    ###################################################
-                cursor = mydb.cursor()
-                cursor.execute(
-                    f'''SELECT number_of_stock FROM portfolio WHERE client_id = '{client_id}' AND stock ='{ticker}'
+                    cursor.execute(f'UPDATE users SET user_xp ={buyingPower} WHERE client_id ={str(ctx.author.id)}')
+                    mydb.commit()
+
+                    await addStockToPurchases(ctx, ticker, value, type)
+
+                    await addPortfolio(ctx, ticker, 0, price)
+
+                    avg_cost = await updateAVG(ctx, ticker, value, price)
+
+                    # print(avg_cost)
+                    cursor = mydb.cursor()
+                    cursor.execute(
+                        f'''UPDATE portfolio SET avg_price ={avg_cost} WHERE client_id ={client_id} AND stock ='{ticker.upper()}'
+                                                        ''')
+                    mydb.commit()
+
+        ###################################################
+                    cursor = mydb.cursor()
+                    cursor.execute(
+                        f'''SELECT number_of_stock FROM portfolio WHERE client_id = '{client_id}' AND stock ='{ticker}'
+                                                ''')
+                    results = cursor.fetchall()
+
+
+                    stockCounter = results[0][0] + int(value)
+
+                    mydb.commit()
+
+                    cursor.execute(
+                        f'''UPDATE portfolio SET number_of_stock = '{stockCounter}' WHERE client_id = '{client_id}' AND stock ='{ticker}'
                                             ''')
-                results = cursor.fetchall()
+                    mydb.commit()
 
 
-                stockCounter = results[0][0] + int(value)
-
-                mydb.commit()
-
-                cursor.execute(
-                    f'''UPDATE portfolio SET number_of_stock = '{stockCounter}' WHERE client_id = '{client_id}' AND stock ='{ticker}'
-                                        ''')
-                mydb.commit()
-
-
-                print(f'{client_id} now owns {stockCounter} of {ticker.upper()} at an average cost of ${avg_cost}')
-    #####################################################
-                await ctx.send(f'''You bought **{numberofStock}** _{ticker.upper()}_ share(s) at a price of ${price} for a total of **${round(priceofStock, 2)}** ''')
-                await ctx.send(f'Your balance is now **${round(buyingPower, 2)}**.')
+                    print(f'{client_id} now owns {stockCounter} of {ticker.upper()} at an average cost of ${avg_cost}')
+        #####################################################
+                    await ctx.send(f'''You bought **{numberofStock}** _{ticker.upper()}_ share(s) at a price of ${price} for a total of **${round(priceofStock, 2)}** ''')
+                    await ctx.send(f'Your balance is now **${round(buyingPower, 2)}**.')
 
 
 
-                #########UPDATE PORTFOLIO TABLE TO ADD STOCK IF NOT THERE OR ADD NUMBER OF STOCK BOUGHT TO EXISTING VALUE##########
-                # cursor.execute(f'UPDATE users SET {ticker}')
+                    #########UPDATE PORTFOLIO TABLE TO ADD STOCK IF NOT THERE OR ADD NUMBER OF STOCK BOUGHT TO EXISTING VALUE##########
+                    # cursor.execute(f'UPDATE users SET {ticker}')
 
+                else:
+
+                    await ctx.send(f'You don\'t have enough buying power to purchase {numberofStock} {ticker.upper()} share(s)')
             else:
+                await ctx.send(f'YOU CAN\'T FOOL THE MASTER')
 
-                await ctx.send(f'You don\'t have enough buying power to purchase {numberofStock} {ticker.upper()} share(s)')
         else:
-            await ctx.send(f'YOU CAN\'T FOOL THE MASTER')
+            await ctx.send(f'The Market is currently closed.')
 
     @commands.command(name='sell', help='!sell <ticker> <amount>')
     async def sell(self, ctx, ticker, value, type='sell'):
@@ -401,7 +415,7 @@ class trader(commands.Cog):
 
             market = await getMarket(ctx)
 
-            total_return = (invested - market)
+            total_return = (market - invested)
 
             perctotreturn = ((total_return)/invested)*100
 
